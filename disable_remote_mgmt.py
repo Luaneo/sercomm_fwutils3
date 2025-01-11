@@ -28,9 +28,9 @@ def login(ip, password):
 	decoded_res = r.json()
 	result = get_value_by_vartype_and_varid(decoded_res, 'status', 'login')
 	if result == 'success':
-		print "[+] Successfully logged into the router!"
+		print("[+] Successfully logged into the router!")
 	else:
-		print "[-] Invalid credentials or rate limit enforced, failed to log in! Login lock duration: %s seconds." % (get_value_by_vartype_and_varid(decoded_res, 'value', 'login_locked'))
+		print("[-] Invalid credentials or rate limit enforced, failed to log in! Login lock duration: %s seconds." % (get_value_by_vartype_and_varid(decoded_res, 'value', 'login_locked')))
 		sys.exit(0)
 
 def scrape_csrf_token(ip):
@@ -39,7 +39,7 @@ def scrape_csrf_token(ip):
 	try:
 		token = m.group(1)
 	except IndexError:
-		print "[-] Failed to find CSRF token!"
+		print("[-] Failed to find CSRF token!")
 		sys.exit(0)
 	return token
 
@@ -52,25 +52,25 @@ def get_option_field_values(ip):
 def set_option_field_value(ip, csrf_token, field, value):
 	r = s.post('http://%s/data/Modules.json' % (ip), data={'sessionid': csrf_token, field: value})
 	if get_value_by_vartype_and_varid(r.json(), 'option', field) != value:
-		print "[-] Requested field value change for field %s failed to propagate! Exiting." % (field)
+		print("[-] Requested field value change for field %s failed to propagate! Exiting." % (field))
 		sys.exit(0)
 
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
-		print "[-] Usage: python disable_remote_mgmt.py router_ip router_password"
+		print("[-] Usage: python disable_remote_mgmt.py router_ip router_password")
 		sys.exit(1)
 	router_ip = sys.argv[1]
 	router_password = sys.argv[2]
-	print "[+] Logging into router..."
+	print("[+] Logging into router...")
 	login(router_ip, router_password)
-	print "[+] Getting current settings..."
+	print("[+] Getting current settings...")
 	options = get_option_field_values(router_ip)
 	if bool(options['autofw_deactive']) and bool(options['easy_support_deactive']):
-		print "[-] This router already has remote management disabled! Exiting."
+		print("[-] This router already has remote management disabled! Exiting.")
 		sys.exit(0)
-	print "[+] Scraping CSRF token..."
+	print("[+] Scraping CSRF token...")
 	csrf_token = scrape_csrf_token(router_ip)
-	print "[+] Disabling remote management..."
+	print("[+] Disabling remote management...")
 	set_option_field_value(router_ip, csrf_token, 'autofw_deactive', '1')
 	set_option_field_value(router_ip, csrf_token, 'easy_support_deactive', '1')
-	print "[+] Done!"
+	print("[+] Done!")

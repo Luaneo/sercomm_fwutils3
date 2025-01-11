@@ -8,7 +8,7 @@ but random access is not allowed."""
 import struct, sys, time, os
 import zlib
 import io
-import __builtin__
+# import __builtin__
 
 __all__ = ["GzipFile","open"]
 
@@ -91,7 +91,7 @@ class GzipFile(io.BufferedIOBase):
         if mode and 'b' not in mode:
             mode += 'b'
         if fileobj is None:
-            fileobj = self.myfileobj = __builtin__.open(filename, mode or 'rb')
+            fileobj = self.myfileobj = __builtins__.open(filename, mode or 'rb')
         if filename is None:
             # Issue #13781: os.fdopen() creates a fileobj with a bogus name
             # attribute. Avoid saving this in the gzip header's filename field.
@@ -156,7 +156,7 @@ class GzipFile(io.BufferedIOBase):
 
     def _init_write(self, filename):
         self.name = filename
-        self.crc = zlib.crc32("") & 0xffffffffL
+        self.crc = zlib.crc32("") & 0xffffffff
         self.size = 0
         self.writebuf = []
         self.bufsize = 0
@@ -167,12 +167,12 @@ class GzipFile(io.BufferedIOBase):
         flags = 0
         self.fileobj.write(chr(flags))
         mtime = 0
-        write32u(self.fileobj, long(mtime))
+        write32u(self.fileobj, int(mtime))
         self.fileobj.write('\x00')
         self.fileobj.write('\x03')
 
     def _init_read(self):
-        self.crc = zlib.crc32("") & 0xffffffffL
+        self.crc = zlib.crc32("") & 0xffffffff
         self.size = 0
 
     def _read_gzip_header(self):
@@ -224,7 +224,7 @@ class GzipFile(io.BufferedIOBase):
         if len(data) > 0:
             self.fileobj.write(self.compress.compress(data))
             self.size += len(data)
-            self.crc = zlib.crc32(data, self.crc) & 0xffffffffL
+            self.crc = zlib.crc32(data, self.crc) & 0xffffffff
             self.offset += len(data)
 
         return len(data)
@@ -317,7 +317,7 @@ class GzipFile(io.BufferedIOBase):
             self._new_member = True
 
     def _add_read_data(self, data):
-        self.crc = zlib.crc32(data, self.crc) & 0xffffffffL
+        self.crc = zlib.crc32(data, self.crc) & 0xffffffff
         offset = self.offset - self.extrastart
         self.extrabuf = self.extrabuf[offset:] + data
         self.extrasize = self.extrasize + len(data)
@@ -336,7 +336,7 @@ class GzipFile(io.BufferedIOBase):
         if crc32 != self.crc:
             raise IOError("CRC check failed %s != %s" % (hex(crc32),
                                                          hex(self.crc)))
-        elif isize != (self.size & 0xffffffffL):
+        elif isize != (self.size & 0xffffffff):
             raise IOError, "Incorrect length of data produced"
 
         # Gzip files can be padded with zeroes and still have archives.
@@ -362,7 +362,7 @@ class GzipFile(io.BufferedIOBase):
                 fileobj.write(self.compress.flush())
                 write32u(fileobj, self.crc)
                 # self.size may exceed 2GB, or even 4GB
-                write32u(fileobj, self.size & 0xffffffffL)
+                write32u(fileobj, self.size & 0xffffffff)
         finally:
             myfileobj = self.myfileobj
             if myfileobj:
@@ -415,7 +415,7 @@ class GzipFile(io.BufferedIOBase):
             if offset < self.offset:
                 raise IOError('Negative seek in write mode')
             count = offset - self.offset
-            for i in xrange(count // 1024):
+            for i in range(count // 1024):
                 self.write(1024 * '\0')
             self.write((count % 1024) * '\0')
         elif self.mode == READ:
@@ -423,7 +423,7 @@ class GzipFile(io.BufferedIOBase):
                 # for negative seek, rewind and do positive seek
                 self.rewind()
             count = offset - self.offset
-            for i in xrange(count // 1024):
+            for i in range(count // 1024):
                 self.read(1024)
             self.read(count % 1024)
 
@@ -486,16 +486,16 @@ def _test():
                 g = sys.stdout
             else:
                 if arg[-3:] != ".gz":
-                    print "filename doesn't end in .gz:", repr(arg)
+                    print("filename doesn't end in .gz:", repr(arg))
                     continue
                 f = open(arg, "rb")
-                g = __builtin__.open(arg[:-3], "wb")
+                g = __builtins__.open(arg[:-3], "wb")
         else:
             if arg == "-":
                 f = sys.stdin
                 g = GzipFile(filename="", mode="wb", fileobj=sys.stdout)
             else:
-                f = __builtin__.open(arg, "rb")
+                f = __builtins__.open(arg, "rb")
                 g = open(arg + ".gz", "wb")
         while True:
             chunk = f.read(1024)

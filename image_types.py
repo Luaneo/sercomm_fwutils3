@@ -2,7 +2,7 @@ from utils import *
 from block_descriptor import *
 from Crypto.Cipher import AES
 import hashlib
-import cStringIO
+import io
 import gzip
 import json
 import gzip_mod
@@ -11,7 +11,7 @@ import os
 
 class Image:
     def __init__(self, image_data, read=True):
-        self.stream = cStringIO.StringIO(image_data)
+        self.stream = io.StringIO(image_data)
         self.stream_len = len(image_data)
         if read:
             self.readHeader()
@@ -115,8 +115,8 @@ class Stage2(Image):
             print('[-] Failed to write manifest to file!')
 
     def createImage(self):
-        self.stream = cStringIO.StringIO()
-        content_stream = cStringIO.StringIO()
+        self.stream = io.StringIO()
+        content_stream = io.StringIO()
         gzip_wrapper = gzip_mod.GzipFile(filename = None, mode = 'wb', fileobj = content_stream, compresslevel = 6)
         for block in self.blocks:
             print('[+] Writing block with name %s and version %s to stream...' % (block.block_name, block.block_version))
@@ -166,7 +166,7 @@ class Type1(Image):
         return dict(key=key, iv=self.iv[:16])
 
     def createImage(self, fw_version, stage2_image):
-        self.stream = cStringIO.StringIO()
+        self.stream = io.StringIO()
         self.nullpad = '\x00' * 32
         self.nullpad2 = '\x00' * 32
         self.fw_version = fw_version
@@ -210,7 +210,7 @@ class Type2(Image):
     def keyPermutator(key):
         perm_tbl = '26aejsw37bfktx48chmuy59dipvz'
         key = bytearray(key)
-        for i in xrange(len(key)):
+        for i in range(len(key)):
             key[i] = perm_tbl[key[i] % len(perm_tbl)]
         return str(key)
 
@@ -232,7 +232,7 @@ class Type2(Image):
         return dict(key=key, iv=self.iv[:16])
 
     def createImage(self, fw_version, stage2_image):
-        self.stream = cStringIO.StringIO()
+        self.stream = io.StringIO()
         self.fw_version = fw_version
         self.filesize = len(stage2_image)
         self.key_factor = os.urandom(32)
